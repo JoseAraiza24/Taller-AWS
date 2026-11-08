@@ -1,3 +1,4 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuid } from "uuid";
@@ -10,7 +11,7 @@ import type { Order, OrderItem } from "../types/order";
 
 interface Product { productId: string; price: number; stock: number; name: string }
 
-export async function createOrder(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function createOrderHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const caller = authenticatedCaller(event);
   if (!caller) return unauthorized();
   const body = parseBody(event.body);
@@ -53,3 +54,5 @@ export async function createOrder(event: APIGatewayProxyEvent): Promise<APIGatew
     return created(order);
   } catch (error) { logError("createOrder", error); return internalError(); }
 }
+
+export const createOrder = withCors(createOrderHandler);

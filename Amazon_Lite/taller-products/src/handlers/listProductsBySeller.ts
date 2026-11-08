@@ -1,10 +1,11 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "../lib/dynamodb";
 import { logError, productsTable } from "../lib/products";
 import { internalError, ok } from "../lib/response";
 
-export async function listProductsBySeller(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function listProductsBySellerHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const sellerId = event.pathParameters?.sellerId;
   if (!sellerId) return ok({ products: [] });
   try {
@@ -14,3 +15,5 @@ export async function listProductsBySeller(event: APIGatewayProxyEvent): Promise
     return ok({ products });
   } catch (error) { logError("listProductsBySeller", error); return internalError(); }
 }
+
+export const listProductsBySeller = withCors(listProductsBySellerHandler);

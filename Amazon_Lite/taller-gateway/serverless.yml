@@ -1,9 +1,13 @@
 service: taller-gateway
 frameworkVersion: "3"
 
+package:
+  individually: true
+
 plugins:
   - serverless-localstack
   - serverless-esbuild
+  - ../../scripts/serverless-cors.cjs
 
 custom:
   localstack:
@@ -13,6 +17,8 @@ custom:
     edgePort: 4566
     autostart: false
   esbuild:
+    concurrency: 1
+    zipConcurrency: 1
     bundle: true
     platform: node
     target: node22
@@ -25,7 +31,7 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${self:provider.stage}
-    JWT_SECRET: ${ssm:/taller/${self:provider.stage}/jwt-secret}
+    JWT_SECRET: ${env:JWT_SECRET, ssm:/taller/${self:provider.stage}/jwt-secret}
     CORS_ORIGINS: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
   apiGateway:
     usagePlan:
@@ -56,7 +62,7 @@ functions:
           method: get
           path: /gateway/ping
           cors:
-            origin: "*"
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
             headers:
               - Content-Type
               - Authorization
@@ -97,7 +103,7 @@ resources:
         ResponseType: UNAUTHORIZED
         StatusCode: "401"
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token'"
 
     GatewayResponseAccessDenied:
@@ -107,7 +113,7 @@ resources:
         ResponseType: ACCESS_DENIED
         StatusCode: "403"
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token'"
 
     GatewayResponseDefault4xx:
@@ -116,7 +122,7 @@ resources:
         RestApiId: { Ref: ApiGatewayRestApi }
         ResponseType: DEFAULT_4XX
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token'"
 
     GatewayResponseDefault5xx:
@@ -125,17 +131,17 @@ resources:
         RestApiId: { Ref: ApiGatewayRestApi }
         ResponseType: DEFAULT_5XX
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token'"
 
   Outputs:
-    MainRestApiId:
+    ScopedMainRestApiId:
       Value: { Ref: ApiGatewayRestApi }
-      Export: { Name: MainRestApiId }
-    MainRestApiRootResourceId:
+      Export: { Name: "MainRestApiId-${self:provider.stage}" }
+    ScopedMainRestApiRootResourceId:
       Value:
         Fn::GetAtt: [ApiGatewayRestApi, RootResourceId]
-      Export: { Name: MainRestApiRootResourceId }
-    MainAuthorizerId:
+      Export: { Name: "MainRestApiRootResourceId-${self:provider.stage}" }
+    ScopedMainAuthorizerId:
       Value: { Ref: MainAuthorizer }
-      Export: { Name: MainAuthorizerId }
+      Export: { Name: "MainAuthorizerId-${self:provider.stage}" }

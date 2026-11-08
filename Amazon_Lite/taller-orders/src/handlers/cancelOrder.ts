@@ -1,9 +1,10 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { authenticatedCaller } from "../lib/auth";
 import { changePendingStatus, getOrder, logError, sellerHasItems } from "../lib/orders";
 import { badRequest, forbidden, internalError, notFound, ok, unauthorized } from "../lib/response";
 
-export async function cancelOrder(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function cancelOrderHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const caller = authenticatedCaller(event);
   if (!caller) return unauthorized();
   const id = event.pathParameters?.id;
@@ -22,3 +23,5 @@ export async function cancelOrder(event: APIGatewayProxyEvent): Promise<APIGatew
     logError("cancelOrder", error); return internalError();
   }
 }
+
+export const cancelOrder = withCors(cancelOrderHandler);

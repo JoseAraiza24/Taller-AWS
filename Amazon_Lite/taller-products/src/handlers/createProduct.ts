@@ -1,3 +1,4 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
@@ -7,7 +8,7 @@ import { badRequest, created, forbidden, internalError, unauthorized } from "../
 import { logError, parseBody, productsTable, validateFields } from "../lib/products";
 import type { Product } from "../types/product";
 
-export async function createProduct(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function createProductHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const caller = authenticatedCaller(event);
   if (!caller) return unauthorized();
   if (caller.role !== "seller") return forbidden("Solo vendedores pueden crear productos");
@@ -22,3 +23,5 @@ export async function createProduct(event: APIGatewayProxyEvent): Promise<APIGat
     return created(product);
   } catch (error) { logError("createProduct", error); return internalError(); }
 }
+
+export const createProduct = withCors(createProductHandler);

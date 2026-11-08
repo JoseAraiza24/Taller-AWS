@@ -2,7 +2,7 @@ import type { APIGatewayProxyResult } from "aws-lambda";
 
 const response = (statusCode: number, data: unknown): APIGatewayProxyResult => ({
   statusCode,
-  headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": process.env.CORS_ORIGINS || "*" },
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify(data),
 });
 export const ok = (data: unknown) => response(200, data);

@@ -1,6 +1,7 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 
-export async function ping(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function pingHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   console.log("Hola desde la lambda ping");
   console.log("Evento desde API Gateway", event);
 
@@ -13,3 +14,5 @@ export async function ping(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
     }),
   };
 }
+
+export const ping = withCors(pingHandler);

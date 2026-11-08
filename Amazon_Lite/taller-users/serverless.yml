@@ -1,9 +1,13 @@
 service: taller-users
 frameworkVersion: "3"
 
+package:
+  individually: true
+
 plugins:
   - serverless-localstack
   - serverless-esbuild
+  - ../../scripts/serverless-cors.cjs
 
 custom:
   localstack:
@@ -13,6 +17,8 @@ custom:
     edgePort: 4566
     autostart: false
   esbuild:
+    concurrency: 1
+    zipConcurrency: 1
     bundle: true
     platform: node
     target: node22
@@ -26,16 +32,16 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${self:provider.stage}
-    JWT_SECRET: ${ssm:/taller/${self:provider.stage}/jwt-secret}
-    JWT_REFRESH_SECRET: ${ssm:/taller/${self:provider.stage}/jwt-refresh-secret}
+    JWT_SECRET: ${env:JWT_SECRET, ssm:/taller/${self:provider.stage}/jwt-secret}
+    JWT_REFRESH_SECRET: ${env:JWT_REFRESH_SECRET, ssm:/taller/${self:provider.stage}/jwt-refresh-secret}
     CORS_ORIGINS: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
     USERS_TABLE: { Ref: UsersTable }
     REFRESH_TOKENS_TABLE: { Ref: RefreshTokensTable }
   apiGateway:
     restApiId:
-      Fn::ImportValue: MainRestApiId
+      Fn::ImportValue: "MainRestApiId-${self:provider.stage}"
     restApiRootResourceId:
-      Fn::ImportValue: MainRestApiRootResourceId
+      Fn::ImportValue: "MainRestApiRootResourceId-${self:provider.stage}"
   iam:
     role:
       statements:
@@ -60,7 +66,7 @@ functions:
           method: post
           path: users/register
           cors:
-            origin: "*"
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
             headers:
               - Content-Type
               - Authorization
@@ -74,7 +80,9 @@ functions:
       - http:
           method: post
           path: users/login
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
   getUser:
     handler: src/handlers/getUser.getUser
     name: taller-${self:provider.stage}-Users-GetUser
@@ -82,11 +90,13 @@ functions:
       - http:
           method: get
           path: users/{id}
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
   updateUser:
     handler: src/handlers/updateUser.updateUser
     name: taller-${self:provider.stage}-Users-UpdateUser
@@ -94,11 +104,13 @@ functions:
       - http:
           method: put
           path: users/{id}
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
   deleteUser:
     handler: src/handlers/deleteUser.deleteUser
     name: taller-${self:provider.stage}-Users-DeleteUser
@@ -106,11 +118,13 @@ functions:
       - http:
           method: delete
           path: users/{id}
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
 
 resources:
   Resources:

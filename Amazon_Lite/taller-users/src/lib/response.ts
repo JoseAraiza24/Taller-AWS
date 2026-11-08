@@ -4,7 +4,6 @@ const respond = (statusCode: number, data: unknown): APIGatewayProxyResult => ({
   statusCode,
   headers: {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": process.env.CORS_ORIGINS || "*",
   },
   body: JSON.stringify(data),
 });

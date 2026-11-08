@@ -1,3 +1,4 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import bcrypt from "bcryptjs";
@@ -7,7 +8,7 @@ import { generateAccessToken, generateRefreshToken } from "../lib/jwt";
 import { parseBody, usersTable } from "../lib/users";
 import type { User } from "../types/user";
 
-export async function login(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function loginHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const body = parseBody(event.body);
   if (!body) return badRequest("El body debe contener un objeto JSON válido");
   const { email, password } = body;
@@ -37,3 +38,5 @@ export async function login(event: APIGatewayProxyEvent): Promise<APIGatewayProx
     return serverError("Error al iniciar sesión");
   }
 }
+
+export const login = withCors(loginHandler);

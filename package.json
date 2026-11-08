@@ -1,0 +1,18 @@
+{
+  "name": "taller-aws",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Amazon Lite: taller de microservicios con Lambda, API Gateway y DynamoDB",
+  "author": "José Antonio Araiza Cortés",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "install:modules": "node scripts/taller.cjs install",
+    "typecheck": "node scripts/taller.cjs typecheck",
+    "test": "node scripts/taller.cjs test",
+    "prepare:local": "node scripts/taller.cjs prepare",
+    "deploy:local": "node scripts/taller.cjs deploy",
+    "verify:local": "node scripts/taller.cjs verify",
+    "endpoints:local": "node scripts/taller.cjs endpoints",
+    "check:prod": "node scripts/comprobar-produccion.cjs"
+  }
+}

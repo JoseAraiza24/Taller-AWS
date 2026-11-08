@@ -45,3 +45,7 @@ Las capturas nativas se guardan en `../../output/actividad-10/`. La captura de t
 Se conserva el alcance didáctico de los videos: cualquier vendedor con al menos un producto en la orden puede confirmar toda la orden. Cancelar cambia el estado y conserva el registro; no repone automáticamente el inventario. La creación y las reservas de varios productos no forman una transacción distribuida. Si una reserva posterior falla, la orden se marca `canceled`, pero las reservas anteriores requieren una compensación que el taller no implementa.
 
 Esta instalación de LocalStack no ejecuta el autorizador CUSTOM de API Gateway. Las rutas protegidas verifican el JWT dentro de la lambda cuando `STAGE=local`, conservando el autorizador compartido en Serverless. Orders reenvía el Bearer validado al invocar UpdateStock. IAM limita la invocación a las tres funciones de Products utilizadas: GetProduct, UpdateStock y ListProductsBySeller.
+
+## Conexión y entornos
+
+Los handlers HTTP usan `src/common/cors.ts` y la configuración CORS del stage. Las referencias compartidas son `MainRestApiId-<stage>`, `MainRestApiRootResourceId-<stage>` y `MainAuthorizerId-<stage>`. Se incluyen configuraciones `local`, `develop` y `prod`; el dominio HTTPS de producción es un ejemplo que debe reemplazarse antes de desplegar. Consulta las instrucciones generales en [README del proyecto](../../README.md).

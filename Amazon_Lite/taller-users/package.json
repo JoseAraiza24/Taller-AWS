@@ -13,7 +13,9 @@
     "remove:local": "bash scripts/serverless-local.sh remove",
     "verify:local": "node scripts/verificar-local.cjs",
     "endpoints:local": "node scripts/mostrar-endpoints.cjs",
-    "verify:crud:local": "node scripts/verificar-crud-local.cjs"
+    "verify:crud:local": "node scripts/verificar-crud-local.cjs",
+    "deploy:develop": "serverless deploy --stage develop",
+    "deploy:prod": "serverless deploy --stage prod"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "3.1164.0",

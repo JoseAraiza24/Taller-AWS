@@ -6,7 +6,7 @@ const aws = (args) => {
   return output.trim() ? JSON.parse(output) : {};
 };
 const gatewayBase = () => {
-  const apiId = aws(["cloudformation", "list-exports"]).Exports.find((item) => item.Name === "MainRestApiId")?.Value;
+  const apiId = aws(["cloudformation", "list-exports"]).Exports.find((item) => item.Name === "MainRestApiId-local")?.Value;
   if (!apiId) throw new Error("Primero despliega Taller Gateway");
   return `http://127.0.0.1:4566/restapis/${apiId}/local/_user_request_`;
 };

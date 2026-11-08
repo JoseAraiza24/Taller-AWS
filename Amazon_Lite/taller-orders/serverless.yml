@@ -7,6 +7,7 @@ package:
 plugins:
   - serverless-localstack
   - serverless-esbuild
+  - ../../scripts/serverless-cors.cjs
 
 custom:
   localstack:
@@ -31,14 +32,14 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${self:provider.stage}
-    JWT_SECRET: ${ssm:/taller/${self:provider.stage}/jwt-secret}
+    JWT_SECRET: ${env:JWT_SECRET, ssm:/taller/${self:provider.stage}/jwt-secret}
     CORS_ORIGINS: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
     ORDERS_TABLE: { Ref: OrdersTable }
   apiGateway:
     restApiId:
-      Fn::ImportValue: MainRestApiId
+      Fn::ImportValue: "MainRestApiId-${self:provider.stage}"
     restApiRootResourceId:
-      Fn::ImportValue: MainRestApiRootResourceId
+      Fn::ImportValue: "MainRestApiRootResourceId-${self:provider.stage}"
   iam:
     role:
       statements:
@@ -66,11 +67,13 @@ functions:
       - http:
           method: post
           path: orders/create
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
   getOrder:
     handler: src/handlers/getOrder.getOrder
     name: taller-${self:provider.stage}-Orders-GetOrder
@@ -78,11 +81,13 @@ functions:
       - http:
           method: get
           path: orders/{id}
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
   listOrdersByUserId:
     handler: src/handlers/listOrdersByUserId.listOrdersByUserId
     name: taller-${self:provider.stage}-Orders-ListOrdersByUserId
@@ -90,11 +95,13 @@ functions:
       - http:
           method: get
           path: orders/list/users/{userId}
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
   confirmOrder:
     handler: src/handlers/confirmOrder.confirmOrder
     name: taller-${self:provider.stage}-Orders-Confirm
@@ -102,11 +109,13 @@ functions:
       - http:
           method: post
           path: orders/{id}/confirm
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
   cancelOrder:
     handler: src/handlers/cancelOrder.cancelOrder
     name: taller-${self:provider.stage}-Orders-Cancel
@@ -114,11 +123,13 @@ functions:
       - http:
           method: post
           path: orders/{id}/cancel
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
 
 resources:
   Resources:

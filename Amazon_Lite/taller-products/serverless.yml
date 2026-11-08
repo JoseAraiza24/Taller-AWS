@@ -7,6 +7,7 @@ package:
 plugins:
   - serverless-localstack
   - serverless-esbuild
+  - ../../scripts/serverless-cors.cjs
 
 custom:
   localstack:
@@ -31,14 +32,14 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${self:provider.stage}
-    JWT_SECRET: ${ssm:/taller/${self:provider.stage}/jwt-secret}
+    JWT_SECRET: ${env:JWT_SECRET, ssm:/taller/${self:provider.stage}/jwt-secret}
     CORS_ORIGINS: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
     PRODUCTS_TABLE: { Ref: ProductsTable }
   apiGateway:
     restApiId:
-      Fn::ImportValue: MainRestApiId
+      Fn::ImportValue: "MainRestApiId-${self:provider.stage}"
     restApiRootResourceId:
-      Fn::ImportValue: MainRestApiRootResourceId
+      Fn::ImportValue: "MainRestApiRootResourceId-${self:provider.stage}"
   iam:
     role:
       statements:
@@ -62,11 +63,13 @@ functions:
       - http:
           method: post
           path: products/create
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
   getProduct:
     handler: src/handlers/getProduct.getProduct
     name: taller-${self:provider.stage}-Products-GetProduct
@@ -74,7 +77,9 @@ functions:
       - http:
           method: get
           path: products/{id}
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
   updateProduct:
     handler: src/handlers/updateProduct.updateProduct
     name: taller-${self:provider.stage}-Products-UpdateProduct
@@ -82,11 +87,13 @@ functions:
       - http:
           method: put
           path: products/{id}
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
   deleteProduct:
     handler: src/handlers/deleteProduct.deleteProduct
     name: taller-${self:provider.stage}-Products-DeleteProduct
@@ -94,11 +101,13 @@ functions:
       - http:
           method: delete
           path: products/{id}
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
   listAllProducts:
     handler: src/handlers/listAllProducts.listAllProducts
     name: taller-${self:provider.stage}-Products-ListAllProducts
@@ -106,7 +115,9 @@ functions:
       - http:
           method: get
           path: products
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
   listProductsBySeller:
     handler: src/handlers/listProductsBySeller.listProductsBySeller
     name: taller-${self:provider.stage}-Products-ListProductsBySeller
@@ -114,7 +125,9 @@ functions:
       - http:
           method: get
           path: products/users/{sellerId}
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
   updateStock:
     handler: src/handlers/updateStock.updateStock
     name: taller-${self:provider.stage}-Products-UpdateStock
@@ -122,11 +135,13 @@ functions:
       - http:
           method: patch
           path: products/{id}/stock
-          cors: true
+          cors:
+            origin: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+            headers: [Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token]
           authorizer:
             type: CUSTOM
             authorizerId:
-              Fn::ImportValue: MainAuthorizerId
+              Fn::ImportValue: "MainAuthorizerId-${self:provider.stage}"
 
 resources:
   Resources:

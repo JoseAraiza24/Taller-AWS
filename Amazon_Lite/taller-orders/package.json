@@ -10,7 +10,9 @@
     "info:local": "bash scripts/serverless-local.sh info",
     "endpoints:local": "node scripts/mostrar-endpoints.cjs",
     "verify:local": "node scripts/verificar-local.cjs",
-    "prepare:insomnia": "node scripts/preparar-insomnia.cjs"
+    "prepare:insomnia": "node scripts/preparar-insomnia.cjs",
+    "deploy:develop": "serverless deploy --stage develop",
+    "deploy:prod": "serverless deploy --stage prod"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "3.1164.0",

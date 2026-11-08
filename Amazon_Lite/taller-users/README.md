@@ -1,8 +1,8 @@
 # Taller Users — Actividad 7
 
 Registro de usuarios de Amazon Lite en LocalStack, basado en el módulo del video 27.
-Comparte API Gateway con Taller Gateway mediante `MainRestApiId` y
-`MainRestApiRootResourceId`. Utiliza Serverless Framework 3, TypeScript y esbuild,
+Comparte API Gateway con Taller Gateway mediante `MainRestApiId-<stage>` y
+`MainRestApiRootResourceId-<stage>`. Utiliza Serverless Framework 3, TypeScript y esbuild,
 como se eligió en la actividad anterior.
 
 El endpoint `POST /users/register` recibe `email`, `password`, `name` y `role`
@@ -80,7 +80,7 @@ Rutas del módulo:
 | PUT | `/users/{id}` | JWT del mismo usuario; recibe `name` |
 | DELETE | `/users/{id}` | JWT del mismo usuario |
 
-Las rutas protegidas importan `MainAuthorizerId`. Se desactivó la caché del autorizador
+Las rutas protegidas importan `MainAuthorizerId-<stage>`. Se desactivó la caché del autorizador
 en Taller Gateway para mantener políticas por método sin reutilizar la política de
 una ruta para otra. Las pruebas detectaron que esta instancia LocalStack acepta la
 configuración `CUSTOM` pero omite la ejecución del autorizador, incluso con una nueva
@@ -98,9 +98,6 @@ Las capturas de la actividad 8 se realizan en Insomnia nativo. El login guarda
 automáticamente sus tokens como variables locales para las demás peticiones. Las
 capturas originales se guardan en `../../output/actividad-8/`.
 
-El usuario personal de práctica se actualizó con el nombre
-`José Antonio Araiza Cortés (Taller AWS)`, se consultó y se eliminó desde Insomnia
-tras la confirmación explícita del alumno. La consulta directa a DynamoDB confirmó
-que su ID ya no existe, y un nuevo login devolvió 401. El despliegue manual posterior
-con `npm run deploy:local -- --force` conserva esa eliminación. Para usar nuevamente
-el mismo correo habrá que registrarlo otra vez y obtener un ID nuevo.
+## Conexión y entornos
+
+Los handlers HTTP usan `src/common/cors.ts` y la configuración CORS del stage. Las referencias compartidas son `MainRestApiId-<stage>`, `MainRestApiRootResourceId-<stage>` y `MainAuthorizerId-<stage>`. Se incluyen configuraciones `local`, `develop` y `prod`; el dominio HTTPS de producción es un ejemplo que debe reemplazarse antes de desplegar. Consulta las instrucciones generales en [README del proyecto](../../README.md).

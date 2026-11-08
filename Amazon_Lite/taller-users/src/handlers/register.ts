@@ -1,3 +1,4 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { QueryCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import bcrypt from "bcryptjs";
@@ -6,7 +7,7 @@ import { dynamo } from "../lib/dynamodb";
 import { ok, badRequest, serverError } from "../lib/response";
 import type { User } from "../types/user";
 
-export async function register(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function registerHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   let body: Record<string, unknown>;
   try {
     const parsed: unknown = JSON.parse(event.body || "{}");
@@ -59,3 +60,5 @@ export async function register(event: APIGatewayProxyEvent): Promise<APIGatewayP
     return serverError();
   }
 }
+
+export const register = withCors(registerHandler);

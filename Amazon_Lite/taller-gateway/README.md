@@ -42,3 +42,7 @@ necesario repetir la preparación y el despliegue.
 
 La entrega original de la actividad 5 se conserva en
 `../../evidencias/06-deploy-gateway/actividad-5-original/`.
+
+## Conexión y entornos
+
+Los handlers HTTP usan `src/common/cors.ts` y la configuración CORS del stage. Las referencias compartidas son `MainRestApiId-<stage>`, `MainRestApiRootResourceId-<stage>` y `MainAuthorizerId-<stage>`. Se incluyen configuraciones `local`, `develop` y `prod`; el dominio HTTPS de producción es un ejemplo que debe reemplazarse antes de desplegar. Consulta las instrucciones generales en [README del proyecto](../../README.md).

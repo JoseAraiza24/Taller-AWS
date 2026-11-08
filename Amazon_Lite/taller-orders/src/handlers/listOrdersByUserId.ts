@@ -1,3 +1,4 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { QueryCommand, type QueryCommandOutput } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "../lib/dynamodb";
@@ -6,7 +7,7 @@ import { logError, ordersTable } from "../lib/orders";
 import { badRequest, forbidden, internalError, ok, unauthorized } from "../lib/response";
 import type { Order } from "../types/order";
 
-export async function listOrdersByUserId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function listOrdersByUserIdHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const caller = authenticatedCaller(event);
   if (!caller) return unauthorized();
   const userId = event.pathParameters?.userId;
@@ -25,3 +26,5 @@ export async function listOrdersByUserId(event: APIGatewayProxyEvent): Promise<A
     return ok({ orders });
   } catch (error) { logError("listOrdersByUserId", error); return internalError(); }
 }
+
+export const listOrdersByUserId = withCors(listOrdersByUserIdHandler);

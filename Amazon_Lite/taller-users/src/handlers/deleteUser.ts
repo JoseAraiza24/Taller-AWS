@@ -1,3 +1,4 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { DeleteCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "../lib/dynamodb";
@@ -6,7 +7,7 @@ import { authenticatedUserId } from "../lib/auth";
 import { publicUser, usersTable } from "../lib/users";
 import type { User } from "../types/user";
 
-export async function deleteUser(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function deleteUserHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const callerId = authenticatedUserId(event);
   if (!callerId) return unauthorized("Unauthorized");
   const userId = event.pathParameters?.id;
@@ -24,3 +25,5 @@ export async function deleteUser(event: APIGatewayProxyEvent): Promise<APIGatewa
     return serverError("Error al borrar el usuario");
   }
 }
+
+export const deleteUser = withCors(deleteUserHandler);

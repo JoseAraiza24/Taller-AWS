@@ -2,7 +2,7 @@
 set -euo pipefail
 TALLER_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 compose() {
-  docker --context orbstack compose --project-directory "$TALLER_ROOT" -f "$TALLER_ROOT/compose.yaml" "$@"
+  docker --context "${TALLER_DOCKER_CONTEXT:-orbstack}" compose --project-directory "$TALLER_ROOT" -f "$TALLER_ROOT/compose.yaml" "$@"
 }
 case "${1:-ayuda}" in
   iniciar) compose up -d --wait --wait-timeout 150 ;;

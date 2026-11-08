@@ -12,7 +12,7 @@ const aws = (args) => JSON.parse(execFileSync("aws", ["--endpoint-url", "http://
 (async () => {
   const stack = aws(["cloudformation", "describe-stacks", "--stack-name", "taller-gateway-local"]).Stacks[0];
   assert.match(stack.StackStatus, /^(CREATE|UPDATE)_COMPLETE$/);
-  const apiId = stack.Outputs.find((x) => x.OutputKey === "MainRestApiId").OutputValue;
+  const apiId = stack.Outputs.find((x) => x.OutputKey === "ScopedMainRestApiId").OutputValue;
   const endpoint = `http://127.0.0.1:4566/restapis/${apiId}/local/_user_request_/gateway/ping`;
   const response = await fetch(endpoint, { signal: AbortSignal.timeout(90000) });
   const body = await response.json();

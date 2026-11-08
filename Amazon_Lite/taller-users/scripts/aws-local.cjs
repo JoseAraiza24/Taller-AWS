@@ -8,7 +8,7 @@ const aws = (args) => {
 };
 const registrationURL = () => {
   const exports = aws(["cloudformation", "list-exports"]).Exports;
-  const apiId = exports.find((item) => item.Name === "MainRestApiId")?.Value;
+  const apiId = exports.find((item) => item.Name === "MainRestApiId-local")?.Value;
   if (!apiId) throw new Error("Primero despliega el módulo Taller Gateway");
   return `http://127.0.0.1:4566/restapis/${apiId}/local/_user_request_/users/register`;
 };

@@ -1,3 +1,4 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { DeleteCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "../lib/dynamodb";
@@ -5,7 +6,7 @@ import { authenticatedCaller } from "../lib/auth";
 import { getStoredProduct, logError, productsTable } from "../lib/products";
 import { forbidden, internalError, notFound, ok, unauthorized } from "../lib/response";
 
-export async function deleteProduct(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function deleteProductHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const caller = authenticatedCaller(event);
   if (!caller) return unauthorized();
   const productId = event.pathParameters?.id;
@@ -18,3 +19,5 @@ export async function deleteProduct(event: APIGatewayProxyEvent): Promise<APIGat
     return ok({ message: "Producto borrado exitosamente", product: result.Attributes });
   } catch (error) { if (error instanceof Error && error.name === "ConditionalCheckFailedException") return notFound(); logError("deleteProduct", error); return internalError(); }
 }
+
+export const deleteProduct = withCors(deleteProductHandler);

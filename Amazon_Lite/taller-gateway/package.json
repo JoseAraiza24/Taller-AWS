@@ -10,7 +10,9 @@
     "deploy:local": "bash scripts/serverless-local.sh deploy",
     "info:local": "bash scripts/serverless-local.sh info",
     "verify:local": "node scripts/verificar-local.cjs",
-    "remove:local": "bash scripts/serverless-local.sh remove"
+    "remove:local": "bash scripts/serverless-local.sh remove",
+    "deploy:develop": "serverless deploy --stage develop",
+    "deploy:prod": "serverless deploy --stage prod"
   },
   "dependencies": {
     "jsonwebtoken": "9.0.3"

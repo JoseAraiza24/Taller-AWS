@@ -45,3 +45,7 @@ Las capturas de la actividad están en `../../output/actividad-9/`. Son capturas
 En esta instalación de LocalStack se observó que API Gateway no ejecuta el autorizador CUSTOM. Por ello, las lambdas protegidas verifican también el JWT cuando `STAGE=local`; se conserva la configuración del autorizador compartido. Fuera del entorno local, el código obtiene la identidad del contexto del autorizador de API Gateway.
 
 Los archivos `.env*` contienen datos privados de la práctica, están excluidos de Git y no deben incluirse en las entregas.
+
+## Conexión y entornos
+
+Los handlers HTTP usan `src/common/cors.ts` y la configuración CORS del stage. Las referencias compartidas son `MainRestApiId-<stage>`, `MainRestApiRootResourceId-<stage>` y `MainAuthorizerId-<stage>`. Se incluyen configuraciones `local`, `develop` y `prod`; el dominio HTTPS de producción es un ejemplo que debe reemplazarse antes de desplegar. Consulta las instrucciones generales en [README del proyecto](../../README.md).

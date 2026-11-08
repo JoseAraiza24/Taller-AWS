@@ -1,67 +1,103 @@
-# Taller de microservicios — entorno local
+# Taller AWS — Amazon Lite
 
-Entorno para realizar las actividades con Docker y LocalStack en este Mac.
-Los servicios emulados se ejecutan localmente, en `http://127.0.0.1:4566`, región `us-east-1`.
-LocalStack **2026.10.6** está activado. Las pruebas reales de S3, SQS y DynamoDB
-se completaron correctamente el 7 de noviembre de 2026.
+**José Antonio Araiza Cortés**
 
-## Comandos
+Backend académico de una tienda con TypeScript, Serverless Framework 3, AWS Lambda, API Gateway y DynamoDB. Se puede ejecutar con Docker y LocalStack. Incluye los cuatro módulos del taller, CORS para conectar un frontend y recursos separados por entorno.
 
-Desde esta carpeta:
+## Módulos
+
+| Carpeta | Responsabilidad |
+| --- | --- |
+| `Amazon_Lite/taller-gateway` | API compartida, ping y autorizador JWT |
+| `Amazon_Lite/taller-users` | Registro, login, consulta, actualización y eliminación del usuario |
+| `Amazon_Lite/taller-products` | CRUD de productos, listados y stock |
+| `Amazon_Lite/taller-orders` | Creación, consulta, listado, confirmación y cancelación de órdenes |
+
+Cada módulo conserva su configuración, código fuente y archivos `package.json` y `package-lock.json`. Las lambdas se empaquetan individualmente con esbuild.
+
+## Ejecutar en LocalStack
+
+Requisitos: Node.js 22 o superior, NPM, Git, AWS CLI, Docker y un token de LocalStack con acceso a los servicios usados. El contexto Docker predeterminado del taller es `orbstack`; para Docker Desktop se puede pasar `TALLER_DOCKER_CONTEXT=default` al comando `scripts/entorno`.
 
 ```bash
+npm ci
+npm run install:modules
+./scripts/configurar-token
 ./scripts/entorno iniciar
-./scripts/entorno estado
-./scripts/entorno verificar
-./scripts/awslocal s3 ls
-./scripts/awslocal sqs list-queues
-./scripts/entorno logs
-./scripts/entorno detener
+npm run prepare:local
+npm run deploy:local
+npm run endpoints:local
 ```
 
-`detener` conserva el contenedor y el volumen. La conservación del estado de los servicios
-entre reinicios requiere la función de persistencia; está desactivada por defecto para
-usar el plan Hobby. El entorno usa el contexto `orbstack` explícitamente.
-El comando local `scripts/awslocal` utiliza el AWS CLI ya instalado y credenciales ficticias
-`test`/`test`. Fija el endpoint de LocalStack y evita leer los perfiles personales de AWS.
-No es necesario instalar otro AWS CLI ni modificar la configuración global.
+`configurar-token` solicita el token de forma oculta y lo guarda en `.env`, con permisos 600. El entorno local fija `127.0.0.1:4566`, región `us-east-1`, y credenciales ficticias `test`; no utiliza perfiles personales de AWS.
 
-## Activación
+El orden de despliegue es **Gateway → Users → Products → Orders**. La API se obtiene del export `MainRestApiId-local`. El frontend debe usar esa URL como base y agregar las rutas correspondientes. Los tokens se envían con `Authorization: Bearer ...`.
 
-Se descargó LocalStack **2026.10.6** para ARM64 y se fijó la imagen por su digest en Compose.
-El token ya está configurado en `.env`. Los pasos siguientes sirven para una instalación
-nueva o para reemplazarlo:
+La conservación de datos al reiniciar LocalStack depende de su licencia y configuración de persistencia. `./scripts/entorno detener` detiene el contenedor sin borrarlo.
 
-1. Crea tu cuenta en https://app.localstack.cloud/sign-up?plan=free y completa la verificación que solicite.
-2. Revisa la licencia disponible en tu cuenta y su cobertura para AWS.
-3. En la sección **Auth Tokens**, copia tu token.
-4. Ejecuta `./scripts/configurar-token` en tu Terminal y pégalo en la entrada oculta.
-5. Ejecuta `./scripts/entorno iniciar` y luego `./scripts/entorno verificar`.
+## Conexión con el frontend
 
-El token se guarda en `.env`, con permisos `600` y excluido de Git. No lo pegues en el chat
-ni lo incluyas en capturas o reportes. También puedes configurar `.env` manualmente
-tomando `.env.example` como referencia.
+Los 18 handlers HTTP exportan `withCors(handler)`, definido en `src/common/cors.ts` de cada módulo. El middleware compara `Origin` con `CORS_ORIGINS`, agrega los encabezados y métodos permitidos, maneja `OPTIONS` y conserva CORS en respuestas de error. Un origen no permitido no recibe `Access-Control-Allow-Origin`. Se añade `Vary: Origin` y no se habilitan cookies entre orígenes.
 
-## Datos, red y evidencias
+API Gateway también configura CORS, preflight público y respuestas de error. El plugin local `scripts/serverless-cors.cjs` corrige el JSON de las plantillas MOCK generadas por Serverless 3 y reconcilia los métodos OPTIONS del API compartido en LocalStack después de cada despliegue. En AWS se utilizan los métodos declarados en CloudFormation. El autorizador JWT conserva su contrato de política de acceso y no usa el wrapper HTTP.
 
-- Proyecto Compose: `taller-microservicios-aws`.
-- Contenedor: `taller-aws-localstack`.
-- Red para contenedores del taller: `taller-microservicios-aws`.
-- Los puertos publicados están vinculados a `127.0.0.1`.
-- Hay un volumen Docker propio del proyecto. La persistencia del estado entre reinicios
-  está desactivada por defecto porque no está incluida en Hobby. Si tu licencia la incluye,
-  puedes activar `LOCALSTACK_PERSISTENCE=1` en `.env` y comprobarla antes de depender de ella.
-- El socket de Docker permite que LocalStack levante contenedores para Lambda cuando una actividad lo requiera.
-- La verificación prueba S3, SQS y DynamoDB, elimina los recursos temporales que crea y guarda
-  el resultado real en `evidencias/00-entorno/verificacion.json`.
-- La comprobación de salud utiliza Python, que está disponible dentro de la imagen fijada.
-- La persistencia, Lambda y otros servicios se comprobarán según los requisitos de las actividades.
-- Crea una carpeta en `actividades/` y otra en `evidencias/` para cada actividad.
+En `local` y `develop` se permite `http://localhost:3000`. El protocolo, dominio y puerto deben coincidir con el frontend. Para usar otro origen, modifica `config/config-<entorno>.json` en los cuatro módulos y vuelve a desplegar. CORS controla qué respuestas puede leer el navegador; los permisos y la autenticación se siguen verificando mediante JWT.
 
-Las pruebas de preparación no sustituyen las evidencias de las actividades del profesor.
+## Entornos y producción
 
-## Documentación oficial consultada
+Los exports e imports compartidos incorporan el stage:
 
-- https://docs.localstack.cloud/aws/getting-started/installation/
-- https://docs.localstack.cloud/aws/getting-started/auth-token/
-- https://www.localstack.cloud/pricing
+| Recurso | Local | Producción |
+| --- | --- | --- |
+| API | `MainRestApiId-local` | `MainRestApiId-prod` |
+| Recurso raíz | `MainRestApiRootResourceId-local` | `MainRestApiRootResourceId-prod` |
+| Autorizador | `MainAuthorizerId-local` | `MainAuthorizerId-prod` |
+
+Las lambdas, tablas, stacks y parámetros SSM también se nombran por entorno. `develop` y `prod` pueden coexistir sin colisiones de exports. Para migrar una instalación anterior se añaden primero los nombres nuevos, se actualizan los consumidores y luego se retiran los antiguos; no es necesario eliminar las tablas.
+
+`config-prod.json` usa **`https://amazon-lite.example.com` como dominio de ejemplo**. Antes de un despliegue real hay que sustituirlo por el dominio HTTPS del frontend en los cuatro módulos, configurar las credenciales y permisos de AWS y crear parámetros SSM SecureString exclusivos de producción:
+
+```text
+/taller/prod/jwt-secret
+/taller/prod/jwt-refresh-secret
+```
+
+También pueden suministrarse `JWT_SECRET` y `JWT_REFRESH_SECRET` al proceso; si no están presentes, Serverless resuelve los parámetros SSM del stage. No hay valores de secretos en el repositorio.
+
+Desde una cuenta AWS preparada, el despliegue sigue el mismo orden:
+
+```bash
+npm --prefix Amazon_Lite/taller-gateway run deploy:prod
+npm --prefix Amazon_Lite/taller-users run deploy:prod
+npm --prefix Amazon_Lite/taller-products run deploy:prod
+npm --prefix Amazon_Lite/taller-orders run deploy:prod
+```
+
+Cada módulo también dispone de `deploy:develop`. Estos comandos se distinguen de `deploy:local`, que usa exclusivamente LocalStack. La validación del proyecto se realiza localmente; la configuración de producción no implica que se haya desplegado en una cuenta AWS.
+
+## Comprobaciones
+
+```bash
+npm run typecheck
+npm test
+npm run verify:local
+node scripts/verificar-cors-local.cjs
+npm run check:prod
+```
+
+Las pruebas unitarias cubren el autorizador y CORS en los cuatro módulos. Las verificaciones locales ejercitan las peticiones reales y limpian sus propios datos sintéticos. La comprobación de CORS recorre los 18 endpoints y sus preflight. `check:prod` compila las plantillas de `develop` y `prod` con valores JWT efímeros de prueba: comprueba nombres, imports, exports y orígenes sin desplegar recursos ni leer secretos reales. Sus archivos generados quedan ignorados en `.serverless` y `evidencias`.
+
+Serverless 3 puede mostrar una advertencia porque su esquema de validación es anterior a Node.js 22; las funciones utilizan Node.js 22.
+
+## Control de versiones
+
+- `main`: versión verificada para la entrega.
+- `develop`: integración y preparación de cambios.
+
+Los cambios se prueban en `develop` antes de integrarlos a `main`. No se publican `node_modules`, `.serverless`, archivos `.env`, capturas, reportes ni registros de ejecución. Las dependencias se reproducen con los archivos lock y `npm ci`.
+
+## Alcance académico
+
+En esta instalación de LocalStack no se ejecuta el autorizador CUSTOM. Para `STAGE=local`, las lambdas protegidas verifican también el JWT; en AWS usan el contexto del autorizador de API Gateway. Se conserva la configuración del autorizador compartido.
+
+Cancelar una orden conserva el registro y cambia su estado; no repone automáticamente inventario. Las reservas de varios productos no implementan compensación distribuida y un vendedor participante puede confirmar toda la orden, como en el taller. El índice de correo no garantiza unicidad transaccional ante registros simultáneos.

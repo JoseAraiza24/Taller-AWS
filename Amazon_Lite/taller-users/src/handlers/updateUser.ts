@@ -1,3 +1,4 @@
+import { withCors } from "../common/cors";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "../lib/dynamodb";
@@ -6,7 +7,7 @@ import { authenticatedUserId } from "../lib/auth";
 import { parseBody, publicUser, usersTable } from "../lib/users";
 import type { User } from "../types/user";
 
-export async function updateUser(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function updateUserHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const callerId = authenticatedUserId(event);
   if (!callerId) return unauthorized("Unauthorized");
   const userId = event.pathParameters?.id;
@@ -30,3 +31,5 @@ export async function updateUser(event: APIGatewayProxyEvent): Promise<APIGatewa
     return serverError("Error al actualizar el usuario");
   }
 }
+
+export const updateUser = withCors(updateUserHandler);
