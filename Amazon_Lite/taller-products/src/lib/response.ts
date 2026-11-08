@@ -1,0 +1,14 @@
+import type { APIGatewayProxyResult } from "aws-lambda";
+
+const response = (statusCode: number, data: unknown): APIGatewayProxyResult => ({
+  statusCode,
+  headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": process.env.CORS_ORIGINS || "*" },
+  body: JSON.stringify(data),
+});
+export const ok = (data: unknown) => response(200, data);
+export const created = (data: unknown) => response(201, data);
+export const badRequest = (message: string) => response(400, { message });
+export const unauthorized = () => response(401, { message: "Unauthorized" });
+export const forbidden = (message: string) => response(403, { message });
+export const notFound = () => response(404, { message: "Producto no encontrado" });
+export const internalError = () => response(500, { message: "Error al procesar la petición de productos" });

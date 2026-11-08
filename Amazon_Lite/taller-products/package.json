@@ -1,0 +1,32 @@
+{
+  "name": "taller-products",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Módulo Products de Amazon Lite",
+  "author": "José Antonio Araiza Cortés",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "deploy:local": "bash scripts/deploy-local.sh",
+    "info:local": "bash scripts/serverless-local.sh info",
+    "remove:local": "bash scripts/serverless-local.sh remove",
+    "endpoints:local": "node scripts/mostrar-endpoints.cjs",
+    "verify:local": "node scripts/verificar-local.cjs",
+    "prepare:insomnia": "node scripts/preparar-insomnia.cjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "3.1164.0",
+    "@aws-sdk/lib-dynamodb": "3.1164.0",
+    "jsonwebtoken": "9.0.3",
+    "uuid": "14.0.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "8.10.164",
+    "@types/jsonwebtoken": "9.0.10",
+    "@types/node": "22.20.5",
+    "esbuild": "0.28.2",
+    "serverless": "3.40.0",
+    "serverless-esbuild": "1.57.2",
+    "serverless-localstack": "1.4.0",
+    "typescript": "5.9.3"
+  }
+}

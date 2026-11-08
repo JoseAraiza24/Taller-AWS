@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+TALLER_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+compose() {
+  docker --context orbstack compose --project-directory "$TALLER_ROOT" -f "$TALLER_ROOT/compose.yaml" "$@"
+}
+case "${1:-ayuda}" in
+  iniciar) compose up -d --wait --wait-timeout 150 ;;
+  detener) compose stop ;;
+  estado) compose ps -a ;;
+  logs) compose logs --tail 80 localstack ;;
+  verificar) exec python3 "$TALLER_ROOT/scripts/verificar.py" ;;
+  *)
+    echo 'Uso: ./scripts/entorno {iniciar|detener|estado|logs|verificar}'
+    echo 'detener para el contenedor; la persistencia del estado depende de la licencia.'
+    ;;
+esac

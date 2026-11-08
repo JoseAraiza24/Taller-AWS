@@ -1,0 +1,144 @@
+service: taller-orders
+frameworkVersion: "3"
+
+package:
+  individually: true
+
+plugins:
+  - serverless-localstack
+  - serverless-esbuild
+
+custom:
+  localstack:
+    stages: [local]
+    host: http://127.0.0.1
+    edgePort: 4566
+    autostart: false
+  esbuild:
+    concurrency: 1
+    zipConcurrency: 1
+    bundle: true
+    platform: node
+    target: node22
+    sourcemap: true
+    exclude: []
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  timeout: 30
+  stage: ${opt:stage, 'local'}
+  region: us-east-1
+  environment:
+    STAGE: ${self:provider.stage}
+    JWT_SECRET: ${ssm:/taller/${self:provider.stage}/jwt-secret}
+    CORS_ORIGINS: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+    ORDERS_TABLE: { Ref: OrdersTable }
+  apiGateway:
+    restApiId:
+      Fn::ImportValue: MainRestApiId
+    restApiRootResourceId:
+      Fn::ImportValue: MainRestApiRootResourceId
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:Query
+          Resource:
+            - Fn::GetAtt: [OrdersTable, Arn]
+            - Fn::Sub: ${OrdersTable.Arn}/index/*
+        - Effect: Allow
+          Action: lambda:InvokeFunction
+          Resource:
+            - Fn::Sub: arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:taller-${self:provider.stage}-Products-GetProduct
+            - Fn::Sub: arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:taller-${self:provider.stage}-Products-UpdateStock
+            - Fn::Sub: arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:taller-${self:provider.stage}-Products-ListProductsBySeller
+
+functions:
+  createOrder:
+    handler: src/handlers/createOrder.createOrder
+    name: taller-${self:provider.stage}-Orders-Create
+    events:
+      - http:
+          method: post
+          path: orders/create
+          cors: true
+          authorizer:
+            type: CUSTOM
+            authorizerId:
+              Fn::ImportValue: MainAuthorizerId
+  getOrder:
+    handler: src/handlers/getOrder.getOrder
+    name: taller-${self:provider.stage}-Orders-GetOrder
+    events:
+      - http:
+          method: get
+          path: orders/{id}
+          cors: true
+          authorizer:
+            type: CUSTOM
+            authorizerId:
+              Fn::ImportValue: MainAuthorizerId
+  listOrdersByUserId:
+    handler: src/handlers/listOrdersByUserId.listOrdersByUserId
+    name: taller-${self:provider.stage}-Orders-ListOrdersByUserId
+    events:
+      - http:
+          method: get
+          path: orders/list/users/{userId}
+          cors: true
+          authorizer:
+            type: CUSTOM
+            authorizerId:
+              Fn::ImportValue: MainAuthorizerId
+  confirmOrder:
+    handler: src/handlers/confirmOrder.confirmOrder
+    name: taller-${self:provider.stage}-Orders-Confirm
+    events:
+      - http:
+          method: post
+          path: orders/{id}/confirm
+          cors: true
+          authorizer:
+            type: CUSTOM
+            authorizerId:
+              Fn::ImportValue: MainAuthorizerId
+  cancelOrder:
+    handler: src/handlers/cancelOrder.cancelOrder
+    name: taller-${self:provider.stage}-Orders-Cancel
+    events:
+      - http:
+          method: post
+          path: orders/{id}/cancel
+          cors: true
+          authorizer:
+            type: CUSTOM
+            authorizerId:
+              Fn::ImportValue: MainAuthorizerId
+
+resources:
+  Resources:
+    OrdersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${self:provider.stage}-orders
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: orderId
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: orderId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: user-orders-index
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL

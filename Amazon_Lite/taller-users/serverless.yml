@@ -1,0 +1,150 @@
+service: taller-users
+frameworkVersion: "3"
+
+plugins:
+  - serverless-localstack
+  - serverless-esbuild
+
+custom:
+  localstack:
+    stages:
+      - local
+    host: http://127.0.0.1
+    edgePort: 4566
+    autostart: false
+  esbuild:
+    bundle: true
+    platform: node
+    target: node22
+    sourcemap: true
+    exclude: []
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  stage: ${opt:stage, 'local'}
+  region: us-east-1
+  environment:
+    STAGE: ${self:provider.stage}
+    JWT_SECRET: ${ssm:/taller/${self:provider.stage}/jwt-secret}
+    JWT_REFRESH_SECRET: ${ssm:/taller/${self:provider.stage}/jwt-refresh-secret}
+    CORS_ORIGINS: ${file(./config/config-${self:provider.stage}.json):CORS_ORIGINS}
+    USERS_TABLE: { Ref: UsersTable }
+    REFRESH_TOKENS_TABLE: { Ref: RefreshTokensTable }
+  apiGateway:
+    restApiId:
+      Fn::ImportValue: MainRestApiId
+    restApiRootResourceId:
+      Fn::ImportValue: MainRestApiRootResourceId
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+          Resource:
+            - Fn::GetAtt: [UsersTable, Arn]
+            - Fn::Sub: ${UsersTable.Arn}/index/*
+            - Fn::GetAtt: [RefreshTokensTable, Arn]
+
+functions:
+  register:
+    handler: src/handlers/register.register
+    name: taller-${self:provider.stage}-Users-Register
+    events:
+      - http:
+          method: post
+          path: users/register
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Date
+              - X-Amz-Security-Token
+  login:
+    handler: src/handlers/login.login
+    name: taller-${self:provider.stage}-Users-Login
+    events:
+      - http:
+          method: post
+          path: users/login
+          cors: true
+  getUser:
+    handler: src/handlers/getUser.getUser
+    name: taller-${self:provider.stage}-Users-GetUser
+    events:
+      - http:
+          method: get
+          path: users/{id}
+          cors: true
+          authorizer:
+            type: CUSTOM
+            authorizerId:
+              Fn::ImportValue: MainAuthorizerId
+  updateUser:
+    handler: src/handlers/updateUser.updateUser
+    name: taller-${self:provider.stage}-Users-UpdateUser
+    events:
+      - http:
+          method: put
+          path: users/{id}
+          cors: true
+          authorizer:
+            type: CUSTOM
+            authorizerId:
+              Fn::ImportValue: MainAuthorizerId
+  deleteUser:
+    handler: src/handlers/deleteUser.deleteUser
+    name: taller-${self:provider.stage}-Users-DeleteUser
+    events:
+      - http:
+          method: delete
+          path: users/{id}
+          cors: true
+          authorizer:
+            type: CUSTOM
+            authorizerId:
+              Fn::ImportValue: MainAuthorizerId
+
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${self:provider.stage}-users
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: email-index
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+    RefreshTokensTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${self:provider.stage}-refresh-tokens
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: token
+            AttributeType: S
+        KeySchema:
+          - AttributeName: token
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: expiresAt
+          Enabled: true

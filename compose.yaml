@@ -1,0 +1,33 @@
+name: taller-microservicios-aws
+
+services:
+  localstack:
+    image: localstack/localstack@sha256:f94401988db4c01a5b2634d37d698a9b11c93f74c1ad0f7a8849f5ebd73dcbdc
+    container_name: taller-aws-localstack
+    ports:
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4510-4559:4510-4559"
+    environment:
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:?Primero ejecuta ./scripts/configurar-token}
+      PERSISTENCE: ${LOCALSTACK_PERSISTENCE:-0}
+      DEBUG: "0"
+      AWS_DEFAULT_REGION: us-east-1
+      LAMBDA_DOCKER_NETWORK: taller-microservicios-aws
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4566/_localstack/health', timeout=3).close()"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 15s
+    networks:
+      - taller
+
+volumes:
+  localstack-data:
+
+networks:
+  taller:
+    name: taller-microservicios-aws

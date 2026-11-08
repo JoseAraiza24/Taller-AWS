@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""Guarda el token localmente mediante entrada oculta; no lo imprime ni lo envía al chat."""
+import getpass
+import os
+import pathlib
+import re
+import sys
+
+path = pathlib.Path(__file__).resolve().parent.parent / ".env"
+if not sys.stdin.isatty():
+    sys.exit("Ejecuta este comando en tu Terminal para introducir el token de forma oculta.")
+token = getpass.getpass("Token de LocalStack (entrada oculta): ").strip()
+if not re.fullmatch(r"[A-Za-z0-9_.\-]+", token):
+    sys.exit("El token está vacío o contiene caracteres inesperados. No se guardó ningún cambio.")
+text = path.read_text(encoding="utf-8") if path.exists() else ""
+lines = [line for line in text.splitlines() if not line.startswith("LOCALSTACK_AUTH_TOKEN=")]
+lines.append("LOCALSTACK_AUTH_TOKEN=" + token)
+fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+os.fchmod(fd, 0o600)
+with os.fdopen(fd, "w", encoding="utf-8") as output:
+    output.write("\n".join(lines) + "\n")
+print("Token guardado en .env con acceso restringido al usuario.")
+print("Continúa con: ./scripts/entorno iniciar && ./scripts/entorno verificar")
